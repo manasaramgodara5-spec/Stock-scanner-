@@ -1,4 +1,4 @@
-import streamlit as st
+from concurrent.futures import ThreadPoolExecutor, as_completed import streamlit as st
 import pandas as pd
 import numpy as np
 import yfinance as yf
@@ -25,28 +25,285 @@ st.caption("Python + Streamlit + yfinance")
 # ============================================================
 
 # You can replace/expand this list with your own NSE universe.
-NSE_STOCKS = [
-    "RELIANCE", "TCS", "HDFCBANK", "ICICIBANK", "INFY",
-    "HINDUNILVR", "ITC", "SBIN", "BHARTIARTL", "KOTAKBANK",
-    "LT", "AXISBANK", "BAJFINANCE", "MARUTI", "ASIANPAINT",
-    "HCLTECH", "SUNPHARMA", "TITAN", "ULTRACEMCO", "WIPRO",
-    "NTPC", "POWERGRID", "M&M", "TATASTEEL", "JSWSTEEL",
-    "ADANIENT", "ADANIPORTS", "ONGC", "COALINDIA", "TATAMOTORS",
-    "TECHM", "NESTLEIND", "BAJAJFINSV", "INDUSINDBK",
-    "GRASIM", "CIPLA", "DRREDDY", "EICHERMOT", "DIVISLAB",
-    "APOLLOHOSP", "BRITANNIA", "HEROMOTOCO", "HINDALCO",
-    "TATACONSUM", "BPCL", "IOC", "SHRIRAMFIN", "TRENT",
-    "BEL", "HAL", "IRFC", "RVNL", "NHPC", "SAIL",
-    "VEDL", "BHEL", "BANKBARODA", "PNB", "CANBK",
-    "IDFCFIRSTB", "FEDERALBNK", "INDIANB", "UNIONBANK",
-    "JINDALSTEL", "NMDC", "RECLTD", "PFC", "HUDCO",
-    "IREDA", "MAZDOCK", "COCHINSHIP", "BDL", "DIXON",
-    "POLYCAB", "PERSISTENT", "MPHASIS", "COFORGE",
-    "LTIM", "ASTRAL", "DEEPAKNTR", "SRF", "PIIND",
-    "TORNTPHARM", "ZYDUSLIFE", "AUROPHARMA", "LUPIN",
-    "ALKEM", "MAXHEALTH", "FORTIS", "LODHA", "DLF",
-    "OBEROIRLTY", "INDHOTEL", "IRCTC", "CONCOR"
+NSE_STOCKS = , "LULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULULUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUUL
+def check_selected_patterns(df, selected_patterns):
+    """
+    सभी selected patterns को check करता है।
+    सभी TRUE होने पर ही TRUE return करेगा.
+    """
+
+    if not selected_patterns:
+        return False
+
+    results = []
+
+    for pattern_name in selected_patterns:
+
+        pattern_function = PATTERN_FUNCTIONS[pattern_name]
+
+        result = pattern_function(df)
+
+        results.append(result)
+
+    # AND logic
+    return all(results)MIN_MARKET_CAP = 100 * 10**7   # ₹100 Crore = ₹1,000,000,000
+
+
+@st.cache_data(ttl=24 * 60 * 60, show_spinner=False)
+def get_nse_stocks_by_market_cap():
+    """
+    Fetch NSE stocks from Yahoo Finance and return only
+    stocks having Market Cap > ₹100 Crore.
+
+    Cache duration: 24 hours
+    """
+
+    # NSE equity symbols
+    nse_url = (
+        "https://www.nseindia.com/api/equity-stockIndices?index=NIFTY%20500"
+    )
+
+    # For a complete NSE universe, maintain/use your NSE symbols list.
+    # Example base universe:
+    symbols = [
+        "RELIANCE", "TCS", "INFY", "HDFCBANK", "ICICIBANK",
+        "SBIN", "ITC", "LT", "BHARTIARTL", "AXISBANK"
+    ]
+
+    # Convert NSE symbols to Yahoo Finance format
+    tickers = [symbol + ".NS" for symbol in symbols]
+
+    def get_market_cap(ticker):
+        try:
+            stock = yf.Ticker(ticker)
+
+            # fast_info is preferable when marketCap is available
+            market_cap = stock.fast_info.get("market_cap", None)
+
+            if market_cap is None:
+                # Fallback to info
+                market_cap = stock.info.get("marketCap", None)
+
+            if market_cap and market_cap > MIN_MARKET_CAP:
+                return ticker.replace(".NS", "")
+
+        except Exception:
+            pass
+
+        return None
+
+    valid_stocks = []
+
+    # Query several stocks concurrently instead of one-by-one
+    with ThreadPoolExecutor(max_workers=8) as executor:
+
+        futures = [
+            executor.submit(get_market_cap, ticker)
+            for ticker in tickers
+        ]
+
+        for future in as_completed(futures):
+            result = future.result()
+
+            if result:
+                valid_stocks.append(result)
+
+    return sorted(valid_stocks) NSE_STOCKS = [
+    "RELIANCE",
+    "TCS",
+    "INFY",
+    ...
+    ]# Original NSE universe
+ALL_NSE_STOCKS = [
+    "RELIANCE",
+    "TCS",
+    "INFY",
+    "HDFCBANK",
+    "ICICIBANK",
+    "SBIN",
+    "ITC",
+    "LT",
+    "BHARTIARTL",
+    "AXISBANK",
+    # ... your complete NSE symbol list
 ]
+
+# Dynamically filter by Market Cap > ₹100 Crore
+NSE_STOCKS = filter_stocks_by_market_cap(ALL_NSE_STOCKS)
+def is_hammer(df):
+    if len(df) < 1:
+        return False
+
+    c = df.iloc[-1]
+
+    body = abs(c["Close"] - c["Open"])
+    lower_shadow = min(c["Open"], c["Close"]) - c["Low"]
+    upper_shadow = c["High"] - max(c["Open"], c["Close"])
+
+    # Zero body से division/logic problem रोकने के लिए
+    if body <= 0:
+        return False
+
+    return (
+        lower_shadow >= 3 * body
+        and upper_shadow <= body * 0.5
+    )
+
+
+def is_bullish_engulfing(df):
+    if len(df) < 2:
+        return False
+
+    prev = df.iloc[-2]
+    curr = df.iloc[-1]
+
+    prev_bearish = prev["Close"] < prev["Open"]
+    curr_bullish = curr["Close"] > curr["Open"]
+
+    return (
+        prev_bearish
+        and curr_bullish
+        and curr["Open"] <= prev["Close"]
+        and curr["Close"] >= prev["Open"]
+    )
+
+
+def is_bearish_engulfing(df):
+    if len(df) < 2:
+        return False
+
+    prev = df.iloc[-2]
+    curr = df.iloc[-1]
+
+    prev_bullish = prev["Close"] > prev["Open"]
+    curr_bearish = curr["Close"] < curr["Open"]
+
+    return (
+        prev_bullish
+        and curr_bearish
+        and curr["Open"] >= prev["Close"]
+        and curr["Close"] <= prev["Open"]
+    )
+
+
+def is_piercing_line(df):
+    if len(df) < 2:
+        return False
+
+    prev = df.iloc[-2]
+    curr = df.iloc[-1]
+
+    prev_bearish = prev["Close"] < prev["Open"]
+    curr_bullish = curr["Close"] > curr["Open"]
+
+    previous_midpoint = (prev["Open"] + prev["Close"]) / 2
+
+    return (
+        prev_bearish
+        and curr_bullish
+        and curr["Open"] < prev["Close"]
+        and curr["Close"] > previous_midpoint
+        and curr["Close"] < prev["Open"]
+    )PATTERN_FUNCTIONS = {
+    "Hammer": is_hammer,
+    "Bullish Engulfing": is_bullish_engulfing,
+    "Bearish Engulfing": is_bearish_engulfing,
+    "Piercing Line": is_piercing_line,
+    }def is_shooting_star(df):
+    ...st.subheader("Candlestick Pattern Scanner")
+results = []
+
+for symbol in NSE_STOCKS:
+
+    try:
+
+        df = yf.download(
+            f"{symbol}.NS",
+            period="3mo",
+            interval=selected_interval,
+            progress=False,
+            auto_adjust=False
+        )
+
+        if df.empty:
+            continue
+
+        # MultiIndex होने पर ठीक करना
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = df.columns.get_level_values(0)
+
+        # Single Pattern
+        if scan_mode == "Single Pattern":
+
+            matched = check_selected_patterns(
+                df,
+                [selected_pattern]
+            )
+
+        # Multiple Patterns
+        else:
+
+            if not selected_patterns:
+                st.warning("कम से कम एक pattern चुनें.")
+                st.stop()
+
+            matched = check_selected_patterns(
+                df,
+                selected_patterns
+            )
+
+        if matched:
+
+            results.append({
+                "Symbol": symbol,
+                "Pattern": (
+                    selected_pattern
+                    if scan_mode == "Single Pattern"
+                    else ", ".join(selected_patterns)
+                ),
+                "Close": float(df["Close"].iloc[-1])
+            })
+
+    except Exception as e:
+        continue
+if results:
+
+    result_df = pd.DataFrame(results)
+
+    st.success(
+        f"{len(result_df)} stocks matched the selected conditions."
+    )
+
+    st.dataframe(
+        result_df,
+        use_container_width=True
+    )
+
+else:
+
+    st.info("कोई stock सभी selected conditions को पूरा नहीं करता.") scan_mode = st.radio(
+    "Scan Mode",
+    ["Single Pattern", "Multiple Patterns (AND)"],
+    horizontal=True
+)if scan_mode == "Single Pattern":
+
+    selected_pattern = st.selectbox(
+        "Select Candlestick Pattern",
+        list(PATTERN_FUNCTIONS.keys())
+    )else:
+
+    selected_patterns = st.multiselect(
+        "Select Candlestick Patterns",
+        list(PATTERN_FUNCTIONS.keys())
+    )LULUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULU
+LUULLUULLUULLUULLUULLUULLUULLUULU
+LUULULLUULLUULLUULLUULULLULUULLUULLUULLUULULLUULULLUULULUL
+
+LUULLULUULLUULULLUULLULULUULLUULLUULLUULL
+ULLULUULLUULLUULLULULUULLUULLUULL
+UsymboUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULL
+ULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULL
+ULULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUULLUUP
 
 
 # ============================================================
