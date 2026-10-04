@@ -886,5 +886,5 @@ if scan_button:
 
         for i, symbol in enumerate(symbols_to_scan):
 
-        
-          status.text(f"Scanning {symbol} ({i+1}/{total})...")
+            status.text(f"Scanning {symbol} ({i+1}/{total})...")
+            
