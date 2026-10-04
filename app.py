@@ -37,7 +37,7 @@ def check_selected_patterns(df, selected_patterns):
 
     for pattern_name in selected_patterns:
 
-        pattern_function = PATTERN_FUNCTIONS[pattern_name]
+pattern_function = PATTERN_FUNCTIONS[pattern_name]
 
         result = pattern_function(df)
 
@@ -45,11 +45,11 @@ def check_selected_patterns(df, selected_patterns):
 
     # AND logic
     return all(results)
-    @st.cache_data(ttl=24 * 60 * 60, show_spinner=False)
+    @st.cache_data(ttl=24 * 60 * 60, show_spinner=Falsedef
 def get_nse_stocks_by_market_cap():
     """
     Fetch NSE stocks from Yahoo Finance and return only
-    stocks having Market Cap > ₹100 Crore.
+    stocks havinMarketet Cap > ₹100 Crore.
 
     Cache duration: 24 hours
     """
@@ -63,7 +63,7 @@ def get_nse_stocks_by_market_cap():
     # Example base universe:
     symbols = [
         "RELIANCE", "TCS", "INFY", "HDFCBANK", "ICICIBANK",
-        "SBIN", "ITC", "LT", "BHARTIARTL", "AXISBANK"
+        "SBIN", "ITC", "LT",BHARTIARTLTL", "AXISBANK"
     ]
 
     # Convert NSE symbols to Yahoo Finance format
