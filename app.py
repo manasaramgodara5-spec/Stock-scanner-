@@ -41,7 +41,7 @@ def check_selected_patterns(df, selected_patterns):
 
        result = pattern_function(df)
 
-        results.append(result)
+       results.append(result)
 
     # AND logic
     return all(results)
