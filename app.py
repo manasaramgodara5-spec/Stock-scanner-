@@ -24,7 +24,7 @@ st.caption("Python + Streamlit + yfinance")
 # ============================================================
 
 # You can replace/expand this list with your own NSE universe.
-ef check_selected_patterns(df, selected_patterns):
+def check_selected_patterns(df, selected_patterns):
     """
     सभी selected patterns को check करता है।
     सभी TRUE होने पर ही TRUE return करेगा.
