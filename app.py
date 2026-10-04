@@ -1,5 +1,4 @@
-from concurrent.futures import ThreadPoolExecutor, as_completed import streamlit as st
-import pandas as pd
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import numpy as np
 import yfinance as yf
 import plotly.graph_objects as go
