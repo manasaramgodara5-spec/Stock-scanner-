@@ -44,10 +44,8 @@ def check_selected_patterns(df, selected_patterns):
         results.append(result)
 
     # AND logic
-    return all(results)MIN_MARKET_CAP = 100 * 10**7   # ₹100 Crore = ₹1,000,000,000
-
-
-@st.cache_data(ttl=24 * 60 * 60, show_spinner=False)
+    return all(results)
+      @st.cache_data(ttl=24 * 60 * 60, show_spinner=False)
 def get_nse_stocks_by_market_cap():
     """
     Fetch NSE stocks from Yahoo Finance and return only
