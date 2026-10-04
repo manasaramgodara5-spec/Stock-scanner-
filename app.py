@@ -37,9 +37,9 @@ def check_selected_patterns(df, selected_patterns):
 
     for pattern_name in selected_patterns:
 
-pattern_function = PATTERN_FUNCTIONS[pattern_name]
+       pattern_function = PATTERN_FUNCTIONS[pattern_name]
 
-        result = pattern_function(df)
+       result = pattern_function(df)
 
         results.append(result)
 
