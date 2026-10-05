@@ -45,7 +45,8 @@ def check_selected_patterns(df, selected_patterns):
 
     # AND logic
     return all(results)
-    @st.cache\_data(ttl=24 \* 60 \* 60, show\_spinner=Falsedef)
+    @st.cache_data(ttl=24 * 60 * 60, show_spinner=False)
+
 def get_nse_stocks_by_market_cap():
     """
     Fetch NSE stocks from Yahoo Finance and return only
