@@ -1,4 +1,4 @@
-from concurrent.futures import ThreadPoolExecutor, as_completed
+def concurrent.futures import ThreadPoolExecutor, as_completed
 import numpy as np
 import yfinance as yf
 import plotly.graph_objects as go
@@ -47,7 +47,7 @@ def check_selected_patterns(df, selected_patterns):
     return all(results)
     @st.cache_data(ttl=24 * 60 * 60, show_spinner=False)
 
-def get_nse_stocks_by_market_cap():
+    def get_nse_stocks_by_market_cap():
     """
     Fetch NSE stocks from Yahoo Finance and return only
     stocks havinMarketet Cap > ₹100 Crore.
