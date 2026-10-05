@@ -63,7 +63,7 @@ def get_nse_stocks_by_market_cap():
     # Example base universe:
     symbols = [
         "RELIANCE", "TCS", "INFY", "HDFCBANK", "ICICIBANK",
-        "SBIN", "ITC", "LT",BHARTIARTLTL", "AXISBANK"
+        "SBIN", "ITC", "LT","BHARTIARTLTL", "AXISBANK"
     ]
 
     # Convert NSE symbols to Yahoo Finance format
