@@ -1,8 +1,7 @@
-def concurrent.futures import ThreadPoolExecutor, as_completed
-import numpy as np
+import streamlit as st
 import yfinance as yf
-import plotly.graph_objects as go
-from datetime import datetime, timedelta
+import pandas as pd
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 # ============================================================
