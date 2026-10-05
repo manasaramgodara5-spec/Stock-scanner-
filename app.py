@@ -23,37 +23,46 @@ st.caption("Python + Streamlit + yfinance")
 # NSE STOCK UNIVERSE
 # ============================================================
 
-# फिलहाल stable NSE stock universe.
-# बाद में इसे पूरी NSE list से expand किया जा सकता है.
-
-ALL_NSE_STOCKS = [
+NSE_STOCKS = [
     "RELIANCE", "TCS", "INFY", "HDFCBANK", "ICICIBANK",
     "SBIN", "ITC", "LT", "BHARTIARTL", "AXISBANK",
     "KOTAKBANK", "HINDUNILVR", "BAJFINANCE", "MARUTI",
-    "M&M", "SUNPHARMA", "TITAN", "ULTRACEMCO", "WIPRO",
-    "HCLTECH", "NTPC", "POWERGRID", "TATASTEEL", "JSWSTEEL",
-    "ADANIENT", "ADANIPORTS", "ONGC", "COALINDIA", "TATAMOTORS",
-    "TATACONSUM", "TECHM", "INDUSINDBK", "HINDALCO",
-    "GRASIM", "CIPLA", "DRREDDY", "DIVISLAB", "EICHERMOT",
-    "HEROMOTOCO", "BAJAJ-AUTO", "APOLLOHOSP", "BPCL",
-    "IOC", "BRITANNIA", "NESTLEIND", "ASIANPAINT",
-    "PIDILITIND", "DABUR", "BEL", "HAL", "TRENT",
-    "ZOMATO", "JIOFIN", "IRFC", "RVNL", "RECLTD",
-    "PFC", "CANBK", "BANKBARODA", "PNB", "IDFCFIRSTB",
-    "LICI", "SIEMENS", "ABB", "DLF", "INDHOTEL",
-    "VBL", "INDIGO", "DMART", "BAJAJFINSV", "SHRIRAMFIN",
-    "ICICIPRULI", "SBILIFE", "HDFCLIFE", "MOTHERSON",
-    "TVSMOTOR", "ASHOKLEY", "BOSCHLTD", "VEDL",
-    "SAIL", "NMDC", "JINDALSTEL", "HAVELLS",
-    "VOLTAS", "CROMPTON", "POLYCAB", "DIXON",
-    "PERSISTENT", "COFORGE", "LTIM", "MPHASIS",
-    "BANDHANBNK", "FEDERALBNK", "IDBI", "YESBANK",
-    "RBLBANK", "MANAPPURAM", "MUTHOOTFIN"
+    "SUNPHARMA", "TITAN", "ASIANPAINT", "ULTRACEMCO",
+    "HCLTECH", "WIPRO", "NTPC", "POWERGRID", "M&M",
+    "TATAMOTORS", "TATASTEEL", "ADANIENT", "ADANIPORTS",
+    "COALINDIA", "ONGC", "JSWSTEEL", "TECHM",
+    "NESTLEIND", "GRASIM", "HINDALCO", "CIPLA",
+    "DRREDDY", "DIVISLAB", "EICHERMOT", "BAJAJFINSV",
+    "BAJAJ-AUTO", "HEROMOTOCO", "APOLLOHOSP",
+    "BRITANNIA", "BPCL", "IOC", "GAIL", "TATACONSUM",
+    "INDUSINDBK", "SHRIRAMFIN", "BEL", "HAL",
+    "TRENT", "ZOMATO", "JIOFIN", "IRFC", "RVNL",
+    "DLF", "PIDILITIND", "SIEMENS", "ABB", "HAVELLS",
+    "DABUR", "GODREJCP", "MARICO", "COLPAL",
+    "AMBUJACEM", "ACC", "VEDL", "SAIL", "NMDC",
+    "BANKBARODA", "PNB", "CANBK", "UNIONBANK",
+    "IDFCFIRSTB", "FEDERALBNK", "INDIANB",
+    "LICI", "PFC", "RECLTD", "NHPC", "SJVN",
+    "IOC", "HINDPETRO", "MOTHERSON", "BOSCHLTD",
+    "TVSMOTOR", "ASHOKLEY", "BHEL", "IRCTC",
+    "CONCOR", "DIXON", "POLYCAB", "VOLTAS",
+    "CUMMINSIND", "TORNTPHARM", "AUROPHARMA",
+    "LUPIN", "ALKEM", "MAXHEALTH", "FORTIS",
+    "INDHOTEL", "INDIGO", "ADANIGREEN", "ADANIPOWER",
+    "TATAPOWER", "TATAELXSI", "PERSISTENT",
+    "COFORGE", "MPHASIS", "LTIM", "OFSS",
+    "CANFINHOME", "LICHSGFIN", "MFSL", "ICICIPRULI",
+    "ICICIGI", "SBILIFE", "HDFCLIFE", "MUTHOOTFIN",
+    "MANAPPURAM", "CHOLAFIN", "IDBI", "YESBANK"
 ]
 
 
+# Remove duplicates
+NSE_STOCKS = list(dict.fromkeys(NSE_STOCKS))
+
+
 # ============================================================
-# SETTINGS
+# TIMEFRAME SETTINGS
 # ============================================================
 
 TIMEFRAME_MAP = {
@@ -72,19 +81,6 @@ TIMEFRAME_MAP = {
 }
 
 
-PATTERN_NAMES = [
-    "Hammer",
-    "Bullish Engulfing",
-    "Bearish Engulfing",
-    "Piercing Line",
-    "Dark Cloud Cover",
-    "Shooting Star",
-    "Morning Star",
-    "Evening Star",
-    "Inverted Hammer"
-]
-
-
 # ============================================================
 # DATA DOWNLOAD
 # ============================================================
@@ -95,6 +91,7 @@ def get_stock_data(symbol, interval, period):
     ticker = f"{symbol}.NS"
 
     try:
+
         df = yf.download(
             ticker,
             interval=interval,
@@ -107,11 +104,11 @@ def get_stock_data(symbol, interval, period):
         if df is None or df.empty:
             return pd.DataFrame()
 
-        # yfinance MultiIndex fix
+        # Fix MultiIndex returned by yfinance
         if isinstance(df.columns, pd.MultiIndex):
             df.columns = df.columns.get_level_values(0)
 
-        required = [
+        required_columns = [
             "Open",
             "High",
             "Low",
@@ -119,11 +116,19 @@ def get_stock_data(symbol, interval, period):
             "Volume"
         ]
 
-        for col in required:
-            if col not in df.columns:
+        for column in required_columns:
+            if column not in df.columns:
                 return pd.DataFrame()
 
-        df = df[required].copy()
+        df = df[required_columns].copy()
+
+        # Convert columns to numeric
+        for column in required_columns:
+            df[column] = pd.to_numeric(
+                df[column],
+                errors="coerce"
+            )
+
         df.dropna(inplace=True)
 
         return df
@@ -153,15 +158,26 @@ def add_indicators(df):
     )
 
     # Bollinger Bands
-    df["BB_MID"] = df["Close"].rolling(20).mean()
-    df["BB_STD"] = df["Close"].rolling(20).std()
+    df["BB_MID"] = (
+        df["Close"]
+        .rolling(20)
+        .mean()
+    )
+
+    df["BB_STD"] = (
+        df["Close"]
+        .rolling(20)
+        .std()
+    )
 
     df["BB_UPPER"] = (
-        df["BB_MID"] + 2 * df["BB_STD"]
+        df["BB_MID"]
+        + 2 * df["BB_STD"]
     )
 
     df["BB_LOWER"] = (
-        df["BB_MID"] - 2 * df["BB_STD"]
+        df["BB_MID"]
+        - 2 * df["BB_STD"]
     )
 
     df["BB_WIDTH"] = (
@@ -169,25 +185,35 @@ def add_indicators(df):
         / df["BB_MID"]
     )
 
-    # True Range
+    # ATR
     previous_close = df["Close"].shift(1)
 
     tr1 = df["High"] - df["Low"]
-    tr2 = abs(df["High"] - previous_close)
-    tr3 = abs(df["Low"] - previous_close)
+
+    tr2 = (
+        df["High"] - previous_close
+    ).abs()
+
+    tr3 = (
+        df["Low"] - previous_close
+    ).abs()
 
     df["TR"] = pd.concat(
         [tr1, tr2, tr3],
         axis=1
     ).max(axis=1)
 
-    df["ATR"] = df["TR"].rolling(14).mean()
+    df["ATR"] = (
+        df["TR"]
+        .rolling(14)
+        .mean()
+    )
 
     return df
 
 
 # ============================================================
-# CANDLE VALUES
+# CANDLE CALCULATION
 # ============================================================
 
 def candle_values(row):
@@ -199,8 +225,13 @@ def candle_values(row):
 
     body = abs(close - open_price)
 
-    upper_wick = high - max(open_price, close)
-    lower_wick = min(open_price, close) - low
+    upper_wick = (
+        high - max(open_price, close)
+    )
+
+    lower_wick = (
+        min(open_price, close) - low
+    )
 
     candle_range = high - low
 
@@ -242,41 +273,35 @@ def is_hammer(row):
     )
 
     return (
-        lower_wick >= effective_body * 3
-        and upper_wick <= effective_body * 0.5
-        and close >= open_price
+        lower_wick >= 3 * effective_body
+        and upper_wick <= 0.5 * effective_body
     )
 
 
 # ============================================================
-# INVERTED HAMMER
+# HANGING MAN
 # ============================================================
 
-def is_inverted_hammer(row):
+def is_hanging_man(df, index):
 
-    (
-        open_price,
-        high,
-        low,
-        close,
-        body,
-        upper_wick,
-        lower_wick,
-        candle_range
-    ) = candle_values(row)
-
-    if candle_range <= 0:
+    if index < 1:
         return False
 
-    effective_body = max(
-        body,
-        candle_range * 0.01
+    row = df.iloc[index]
+
+    if not is_hammer(row):
+        return False
+
+    previous_close = float(
+        df["Close"].iloc[index - 1]
     )
 
-    return (
-        upper_wick >= effective_body * 2
-        and lower_wick <= effective_body * 0.5
+    current_close = float(
+        row["Close"]
     )
+
+    # Previous movement should be upward
+    return current_close > previous_close
 
 
 # ============================================================
@@ -305,8 +330,44 @@ def is_shooting_star(row):
     )
 
     return (
-        upper_wick >= effective_body * 2
-        and lower_wick <= effective_body * 0.5
+        upper_wick >= 2 * effective_body
+        and lower_wick <= 0.5 * effective_body
+    )
+
+
+# ============================================================
+# INVERTED HAMMER
+# ============================================================
+
+def is_inverted_hammer(df, index):
+
+    if index < 1:
+        return False
+
+    row = df.iloc[index]
+
+    (
+        open_price,
+        high,
+        low,
+        close,
+        body,
+        upper_wick,
+        lower_wick,
+        candle_range
+    ) = candle_values(row)
+
+    if candle_range <= 0:
+        return False
+
+    effective_body = max(
+        body,
+        candle_range * 0.01
+    )
+
+    return (
+        upper_wick >= 2 * effective_body
+        and lower_wick <= 0.5 * effective_body
     )
 
 
@@ -319,14 +380,14 @@ def is_bullish_engulfing(df, index):
     if index < 1:
         return False
 
-    prev = df.iloc[index - 1]
-    curr = df.iloc[index]
+    previous = df.iloc[index - 1]
+    current = df.iloc[index]
 
-    prev_open = float(prev["Open"])
-    prev_close = float(prev["Close"])
+    prev_open = float(previous["Open"])
+    prev_close = float(previous["Close"])
 
-    curr_open = float(curr["Open"])
-    curr_close = float(curr["Close"])
+    curr_open = float(current["Open"])
+    curr_close = float(current["Close"])
 
     previous_bearish = (
         prev_close < prev_open
@@ -336,15 +397,11 @@ def is_bullish_engulfing(df, index):
         curr_close > curr_open
     )
 
-    engulfing = (
-        curr_open <= prev_close
-        and curr_close >= prev_open
-    )
-
     return (
         previous_bearish
         and current_bullish
-        and engulfing
+        and curr_open <= prev_close
+        and curr_close >= prev_open
     )
 
 
@@ -357,14 +414,14 @@ def is_bearish_engulfing(df, index):
     if index < 1:
         return False
 
-    prev = df.iloc[index - 1]
-    curr = df.iloc[index]
+    previous = df.iloc[index - 1]
+    current = df.iloc[index]
 
-    prev_open = float(prev["Open"])
-    prev_close = float(prev["Close"])
+    prev_open = float(previous["Open"])
+    prev_close = float(previous["Close"])
 
-    curr_open = float(curr["Open"])
-    curr_close = float(curr["Close"])
+    curr_open = float(current["Open"])
+    curr_close = float(current["Close"])
 
     previous_bullish = (
         prev_close > prev_open
@@ -374,15 +431,11 @@ def is_bearish_engulfing(df, index):
         curr_close < curr_open
     )
 
-    engulfing = (
-        curr_open >= prev_close
-        and curr_close <= prev_open
-    )
-
     return (
         previous_bullish
         and current_bearish
-        and engulfing
+        and curr_open >= prev_close
+        and curr_close <= prev_open
     )
 
 
@@ -395,14 +448,14 @@ def is_piercing_line(df, index):
     if index < 1:
         return False
 
-    prev = df.iloc[index - 1]
-    curr = df.iloc[index]
+    previous = df.iloc[index - 1]
+    current = df.iloc[index]
 
-    prev_open = float(prev["Open"])
-    prev_close = float(prev["Close"])
+    prev_open = float(previous["Open"])
+    prev_close = float(previous["Close"])
 
-    curr_open = float(curr["Open"])
-    curr_close = float(curr["Close"])
+    curr_open = float(current["Open"])
+    curr_close = float(current["Close"])
 
     if prev_close >= prev_open:
         return False
@@ -430,14 +483,14 @@ def is_dark_cloud_cover(df, index):
     if index < 1:
         return False
 
-    prev = df.iloc[index - 1]
-    curr = df.iloc[index]
+    previous = df.iloc[index - 1]
+    current = df.iloc[index]
 
-    prev_open = float(prev["Open"])
-    prev_close = float(prev["Close"])
+    prev_open = float(previous["Open"])
+    prev_close = float(previous["Close"])
 
-    curr_open = float(curr["Open"])
-    curr_close = float(curr["Close"])
+    curr_open = float(current["Open"])
+    curr_close = float(current["Close"])
 
     if prev_close <= prev_open:
         return False
@@ -494,9 +547,6 @@ def is_morning_star(df, index):
         third_close > third_open
     )
 
-    if first_body <= 0:
-        return False
-
     first_midpoint = (
         first_open + first_close
     ) / 2
@@ -551,9 +601,6 @@ def is_evening_star(df, index):
         third_close < third_open
     )
 
-    if first_body <= 0:
-        return False
-
     first_midpoint = (
         first_open + first_close
     ) / 2
@@ -571,45 +618,39 @@ def is_evening_star(df, index):
 
 
 # ============================================================
-# PATTERN CHECKER
+# PATTERN FUNCTIONS
 # ============================================================
 
-def check_pattern(df, pattern_name):
+PATTERN_FUNCTIONS = {
+    "Hammer": lambda df: is_hammer(df.iloc[-1]),
 
-    if df.empty:
-        return False
+    "Hanging Man": lambda df:
+        is_hanging_man(df, len(df) - 1),
 
-    index = len(df) - 1
-    current = df.iloc[index]
+    "Shooting Star": lambda df:
+        is_shooting_star(df.iloc[-1]),
 
-    if pattern_name == "Hammer":
-        return is_hammer(current)
+    "Inverted Hammer": lambda df:
+        is_inverted_hammer(df, len(df) - 1),
 
-    if pattern_name == "Inverted Hammer":
-        return is_inverted_hammer(current)
+    "Bullish Engulfing": lambda df:
+        is_bullish_engulfing(df, len(df) - 1),
 
-    if pattern_name == "Shooting Star":
-        return is_shooting_star(current)
+    "Bearish Engulfing": lambda df:
+        is_bearish_engulfing(df, len(df) - 1),
 
-    if pattern_name == "Bullish Engulfing":
-        return is_bullish_engulfing(df, index)
+    "Piercing Line": lambda df:
+        is_piercing_line(df, len(df) - 1),
 
-    if pattern_name == "Bearish Engulfing":
-        return is_bearish_engulfing(df, index)
+    "Dark Cloud Cover": lambda df:
+        is_dark_cloud_cover(df, len(df) - 1),
 
-    if pattern_name == "Piercing Line":
-        return is_piercing_line(df, index)
+    "Morning Star": lambda df:
+        is_morning_star(df, len(df) - 1),
 
-    if pattern_name == "Dark Cloud Cover":
-        return is_dark_cloud_cover(df, index)
-
-    if pattern_name == "Morning Star":
-        return is_morning_star(df, index)
-
-    if pattern_name == "Evening Star":
-        return is_evening_star(df, index)
-
-    return False
+    "Evening Star": lambda df:
+        is_evening_star(df, len(df) - 1),
+}
 
 
 # ============================================================
@@ -628,15 +669,36 @@ def check_selected_patterns(
 
     for pattern_name in selected_patterns:
 
-        result = check_pattern(
-            df,
-            pattern_name
+        pattern_function = (
+            PATTERN_FUNCTIONS.get(pattern_name)
         )
+
+        if pattern_function is None:
+            return False
+
+        result = pattern_function(df)
 
         results.append(result)
 
     # AND logic
     return all(results)
+
+
+# ============================================================
+# BULLISH CANDLE
+# ============================================================
+
+def bullish_candle(df):
+
+    index = len(df) - 1
+
+    return (
+        is_hammer(df.iloc[index])
+        or is_bullish_engulfing(df, index)
+        or is_piercing_line(df, index)
+        or is_morning_star(df, index)
+        or is_inverted_hammer(df, index)
+    )
 
 
 # ============================================================
@@ -668,19 +730,20 @@ def detect_double_bottom(df):
         difference <= 0.03
     )
 
-    first_pos = np.argmin(
+    first_position = np.argmin(
         first_half
     )
 
-    second_pos = (
+    second_position = (
         20 + np.argmin(second_half)
     )
 
-    if second_pos <= first_pos:
+    if second_position <= first_position:
         return False
 
     between = lows[
-        first_pos:second_pos + 1
+        first_position:
+        second_position + 1
     ]
 
     if len(between) < 5:
@@ -689,25 +752,41 @@ def detect_double_bottom(df):
     neckline = np.max(between)
 
     bounce = (
-        neckline - min(first_low, second_low)
-    ) / min(first_low, second_low)
+        neckline - min(
+            first_low,
+            second_low
+        )
+    ) / min(
+        first_low,
+        second_low
+    )
 
-    valid_bounce = bounce >= 0.02
+    valid_bounce = (
+        bounce >= 0.02
+    )
 
     current_close = float(
         df["Close"].iloc[-1]
     )
 
     near_second_bottom = (
-        abs(current_close - second_low)
-        / second_low
-        <= 0.04
+        abs(
+            current_close - second_low
+        ) / second_low <= 0.04
     )
 
     return (
         similar_lows
         and valid_bounce
         and near_second_bottom
+    )
+
+
+def strategy_double_bottom(df):
+
+    return (
+        detect_double_bottom(df)
+        and bullish_candle(df)
     )
 
 
@@ -722,13 +801,8 @@ def detect_consolidation(df):
 
     recent = df.tail(20)
 
-    high = float(
-        recent["High"].max()
-    )
-
-    low = float(
-        recent["Low"].min()
-    )
+    highest = recent["High"].max()
+    lowest = recent["Low"].min()
 
     current_price = float(
         recent["Close"].iloc[-1]
@@ -738,7 +812,7 @@ def detect_consolidation(df):
         return False
 
     range_percent = (
-        high - low
+        highest - lowest
     ) / current_price
 
     narrow_range = (
@@ -761,6 +835,83 @@ def detect_consolidation(df):
 
 
 # ============================================================
+# RANGE BREAKOUT
+# ============================================================
+
+def strategy_range_breakout(df):
+
+    if len(df) < 30:
+        return False
+
+    if not detect_consolidation(df):
+        return False
+
+    previous_range = df.iloc[-21:-1]
+
+    resistance = (
+        previous_range["High"].max()
+    )
+
+    current = df.iloc[-1]
+
+    breakout = (
+        float(current["Close"])
+        > resistance
+    )
+
+    return breakout
+
+
+# ============================================================
+# TRIPLE BOTTOM
+# ============================================================
+
+def detect_triple_bottom(df):
+
+    if len(df) < 60:
+        return False
+
+    lows = df["Low"].values[-60:]
+
+    low1 = np.min(lows[:20])
+    low2 = np.min(lows[20:40])
+    low3 = np.min(lows[40:60])
+
+    average_low = (
+        low1 + low2 + low3
+    ) / 3
+
+    if average_low <= 0:
+        return False
+
+    tolerance = 0.04
+
+    similar1 = (
+        abs(low1 - average_low)
+        / average_low
+        <= tolerance
+    )
+
+    similar2 = (
+        abs(low2 - average_low)
+        / average_low
+        <= tolerance
+    )
+
+    similar3 = (
+        abs(low3 - average_low)
+        / average_low
+        <= tolerance
+    )
+
+    return (
+        similar1
+        and similar2
+        and similar3
+    )
+
+
+# ============================================================
 # CUP & HANDLE
 # ============================================================
 
@@ -773,7 +924,9 @@ def detect_cup_handle(df):
 
     prices = recent["Close"].values
 
-    left = np.mean(prices[:15])
+    left = np.mean(
+        prices[:15]
+    )
 
     middle = np.min(
         prices[25:55]
@@ -785,7 +938,7 @@ def detect_cup_handle(df):
 
     current = prices[-1]
 
-    if middle <= 0 or left <= 0:
+    if left <= 0 or middle <= 0:
         return False
 
     left_drop = (
@@ -801,182 +954,43 @@ def detect_cup_handle(df):
         and right_recovery >= 0.03
     )
 
+    handle_range = (
+        np.max(prices[-10:])
+        - np.min(prices[-10:])
+    )
+
     handle = (
-        (
-            np.max(prices[-10:])
-            - np.min(prices[-10:])
-        )
-        / current
+        handle_range / current
         <= 0.06
     )
 
     return cup and handle
 
 
-# ============================================================
-# STRATEGY CHECKER
-# ============================================================
+def strategy_cup_triple(df):
 
-def check_strategy(
-    df,
-    strategy_name
-):
-
-    if strategy_name == "Double Bottom":
-        return detect_double_bottom(df)
-
-    if strategy_name == "Cup & Handle":
-        return detect_cup_handle(df)
-
-    if strategy_name == "Consolidation":
-        return detect_consolidation(df)
-
-    return False
-
-
-# ============================================================
-# SIDEBAR
-# ============================================================
-
-st.sidebar.header("⚙️ Scanner Settings")
-
-selected_timeframe = st.sidebar.selectbox(
-    "Timeframe",
-    list(TIMEFRAME_MAP.keys())
-)
-
-scan_type = st.sidebar.radio(
-    "Scan Type",
-    [
-        "Candlestick Pattern",
-        "Strategy"
-    ]
-)
-
-
-if scan_type == "Candlestick Pattern":
-
-    scan_mode = st.sidebar.radio(
-        "Pattern Mode",
-        [
-            "Single Pattern",
-            "Multiple Patterns (AND)"
-        ]
+    return (
+        detect_triple_bottom(df)
+        or detect_cup_handle(df)
     )
 
-    if scan_mode == "Single Pattern":
 
-        selected_pattern = st.sidebar.selectbox(
-            "Select Candlestick Pattern",
-            PATTERN_NAMES
-        )
+# ============================================================
+# CANDLE + EMA STRATEGY
+# ============================================================
 
-        selected_patterns = [
-            selected_pattern
-        ]
+def strategy_candle_ema(df):
 
-    else:
+    if len(df) < 55:
+        return False
 
-        selected_patterns = st.sidebar.multiselect(
-            "Select Candlestick Patterns",
-            PATTERN_NAMES
-        )
+    current = df.iloc[-1]
 
-else:
+    if not bullish_candle(df):
+        return False
 
-    strategy_names = [
-        "Double Bottom",
-        "Cup & Handle",
-        "Consolidation"
-    ]
-
-    selected_strategy = st.sidebar.selectbox(
-        "Select Strategy",
-        strategy_names
+    price = float(
+        current["Close"]
     )
 
-    selected_patterns = []
-
-
-# ============================================================
-# STOCK LIMIT
-# ============================================================
-
-stock_limit = st.sidebar.slider(
-    "Number of stocks to scan",
-    min_value=10,
-    max_value=len(ALL_NSE_STOCKS),
-    value=min(50, len(ALL_NSE_STOCKS)),
-    step=10
-)
-
-
-# ============================================================
-# SCAN BUTTON
-# ============================================================
-
-scan_button = st.sidebar.button(
-    "🔍 Start Scan",
-    use_container_width=True
-)
-
-
-# ============================================================
-# SCANNER
-# ============================================================
-
-if scan_button:
-
-    if (
-        scan_type == "Candlestick Pattern"
-        and not selected_patterns
-    ):
-        st.warning(
-            "कम से कम एक pattern चुनें."
-        )
-        st.stop()
-
-    settings = TIMEFRAME_MAP[
-        selected_timeframe
-    ]
-
-    interval = settings["interval"]
-    period = settings["period"]
-
-    stocks_to_scan = (
-        ALL_NSE_STOCKS[:stock_limit]
-    )
-
-    results = []
-
-    progress = st.progress(0)
-
-    status = st.empty()
-
-    total = len(stocks_to_scan)
-
-    # --------------------------------------------------------
-    # Parallel scanning
-    # --------------------------------------------------------
-
-    def scan_one_stock(symbol):
-
-        df = get_stock_data(
-            symbol,
-            interval,
-            period
-        )
-
-        if df.empty:
-            return None
-
-        df = add_indicators(df)
-
-        if scan_type == "Candlestick Pattern":
-
-            matched = check_selected_patterns(
-                df,
-                selected_patterns
-            )
-
-            pattern_tex
+    em
